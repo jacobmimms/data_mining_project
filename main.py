@@ -10,26 +10,29 @@ def main():
     ### print the first 5 rows of the dataframe
     print(df.head())
     ### save the dataframe as a 10 csv files with 1/5 of the rows in each file
-    df1 = df.iloc[:100000]
-    df2 = df.iloc[100000:200000]
-    df3 = df.iloc[200000:300000]
-    df4 = df.iloc[300000:400000]
-    df5 = df.iloc[400000:500000]
-    df6 = df.iloc[500000:600000]
-    df7 = df.iloc[600000:700000]
-    df8 = df.iloc[700000:800000]
-    df9 = df.iloc[800000:900000]
-    df10 = df.iloc[900000:]
-    df1.to_csv("pokec1.csv", index=False)   
-    df2.to_csv("pokec2.csv", index=False)
-    df3.to_csv("pokec3.csv", index=False)
-    df4.to_csv("pokec4.csv", index=False)
-    df5.to_csv("pokec5.csv", index=False)
-    df6.to_csv("pokec6.csv", index=False)
-    df7.to_csv("pokec7.csv", index=False)
-    df8.to_csv("pokec8.csv", index=False)
-    df9.to_csv("pokec9.csv", index=False)
-    df10.to_csv("pokec10.csv", index=False)
+    length = len(df)
+    df1 = df.iloc[:int(length/10)]
+    df2 = df.iloc[int(length/10):int(length/5)]
+    df3 = df.iloc[int(length/5):int(3*length/10)]
+    df4 = df.iloc[int(3*length/10):int(2*length/5)]
+    df5 = df.iloc[int(2*length/5):int(5*length/10)]
+    df6 = df.iloc[int(5*length/10):int(3*length/5)]
+    df7 = df.iloc[int(3*length/5):int(7*length/10)]
+    df8 = df.iloc[int(7*length/10):int(4*length/5)]
+    df9 = df.iloc[int(4*length/5):int(9*length/10)]
+    df10 = df.iloc[int(9*length/10):]
+
+
+    df1.to_csv("data/pokec1.csv", index=False)   
+    df2.to_csv("data/pokec2.csv", index=False)
+    df3.to_csv("data/pokec3.csv", index=False)
+    df4.to_csv("data/pokec4.csv", index=False)
+    df5.to_csv("data/pokec5.csv", index=False)
+    df6.to_csv("data/pokec6.csv", index=False)
+    df7.to_csv("data/pokec7.csv", index=False)
+    df8.to_csv("data/pokec8.csv", index=False)
+    df9.to_csv("data/pokec9.csv", index=False)
+    df10.to_csv("data/pokec10.csv", index=False)
 
     # filter the  dataframe so only people who have completed more than 50% of their profile are included
     df = df[df["completion_percentage"] > 50]
@@ -45,21 +48,16 @@ def main():
     df8 = df.iloc[int(7*length/10):int(4*length/5)]
     df9 = df.iloc[int(4*length/5):int(9*length/10)]
     df10 = df.iloc[int(9*length/10):]
-    df1.to_csv("pokec1_filtered.csv", index=False)
-    df2.to_csv("pokec2_filtered.csv", index=False)
-    df3.to_csv("pokec3_filtered.csv", index=False)
-    df4.to_csv("pokec4_filtered.csv", index=False)
-    df5.to_csv("pokec5_filtered.csv", index=False)
-    df6.to_csv("pokec6_filtered.csv", index=False)
-    df7.to_csv("pokec7_filtered.csv", index=False)
-    df8.to_csv("pokec8_filtered.csv", index=False)
-    df9.to_csv("pokec9_filtered.csv", index=False)
+    df1.to_csv("filtered_data/pokec1_filtered.csv", index=False)
+    df2.to_csv("filtered_data/pokec2_filtered.csv", index=False)
+    df3.to_csv("filtered_data/pokec3_filtered.csv", index=False)
+    df4.to_csv("filtered_data/pokec4_filtered.csv", index=False)
+    df5.to_csv("filtered_data/pokec5_filtered.csv", index=False)
+    df6.to_csv("filtered_data/pokec6_filtered.csv", index=False)
+    df7.to_csv("filtered_data/pokec7_filtered.csv", index=False)
+    df8.to_csv("filtered_data/pokec8_filtered.csv", index=False)
+    df9.to_csv("filtered_data/pokec9_filtered.csv", index=False)
     df10.to_csv("pokec10_filtered.csv", index=False)
-
-
-
-
-
 
 
 if __name__ == "__main__":
