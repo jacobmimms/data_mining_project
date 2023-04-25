@@ -23,7 +23,6 @@ def main():
         df = df.iloc[int(i*partition_len):int(i+1*partition_len)]
         df.to_csv(f"filtered_data/pokec{i+1}.csv", index=False)
 
->>>>>>> c221857 (.)
 
 
 if __name__ == "__main__":
