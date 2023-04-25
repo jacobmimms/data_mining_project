@@ -11,8 +11,8 @@ def main():
     num_partitions = 10
     partition_len = length / num_partitions 
     for i in range(num_partitions):
-        df = df.iloc[int(i*partition_len):int(i+1*partition_len)]
-        df.to_csv(f"data/pokec{i+1}.csv", index=False)
+        df_temp = df.iloc[int(i*partition_len):int((i+1)*partition_len)]
+        df_temp.to_csv(f"data/pokec{i+1}.csv", index=False)
 
     #filter the  dataframe so only people who have completed more than 50% of their profile are included
     df = df[df["completion_percentage"] > 50]
@@ -20,10 +20,14 @@ def main():
     num_partitions = 10
     partition_len = length / num_partitions 
     for i in range(num_partitions):
-        df = df.iloc[int(i*partition_len):int(i+1*partition_len)]
-        df.to_csv(f"filtered_data/pokec{i+1}.csv", index=False)
+        df_temp = df.iloc[int(i*partition_len):int((i+1)*partition_len)]
+        df_temp.to_csv(f"filtered_data/pokec{i+1}.csv", index=False)
 
-
+def data_analysis():
+    # load data 
+    # data = pd.read_csv('filtered_data/pokec1.csv', )
+    pass
 
 if __name__ == "__main__":
-    main()
+    main()    
+    data_analysis()
