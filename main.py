@@ -7,58 +7,27 @@ def main():
     df = pd.read_csv("soc-pokec-profiles.txt", sep="\t", names=columns, index_col=False)
     ## shuffle the rows of the dataframe
     df = df.sample(frac=1).reset_index(drop=True)
-    ### print the first 5 rows of the dataframe
-    print(df.head())
-    ### save the dataframe as a 10 csv files with 1/5 of the rows in each file
     length = len(df)
-    df1 = df.iloc[:int(length/10)]
-    df2 = df.iloc[int(length/10):int(length/5)]
-    df3 = df.iloc[int(length/5):int(3*length/10)]
-    df4 = df.iloc[int(3*length/10):int(2*length/5)]
-    df5 = df.iloc[int(2*length/5):int(5*length/10)]
-    df6 = df.iloc[int(5*length/10):int(3*length/5)]
-    df7 = df.iloc[int(3*length/5):int(7*length/10)]
-    df8 = df.iloc[int(7*length/10):int(4*length/5)]
-    df9 = df.iloc[int(4*length/5):int(9*length/10)]
-    df10 = df.iloc[int(9*length/10):]
+    num_partitions = 10
+    partition_len = length / num_partitions 
+    for i in range(num_partitions):
+        df_temp = df.iloc[int(i*partition_len):int((i+1)*partition_len)]
+        df_temp.to_csv(f"data/pokec{i+1}.csv", index=False)
 
-
-    df1.to_csv("data/pokec1.csv", index=False)   
-    df2.to_csv("data/pokec2.csv", index=False)
-    df3.to_csv("data/pokec3.csv", index=False)
-    df4.to_csv("data/pokec4.csv", index=False)
-    df5.to_csv("data/pokec5.csv", index=False)
-    df6.to_csv("data/pokec6.csv", index=False)
-    df7.to_csv("data/pokec7.csv", index=False)
-    df8.to_csv("data/pokec8.csv", index=False)
-    df9.to_csv("data/pokec9.csv", index=False)
-    df10.to_csv("data/pokec10.csv", index=False)
-
-    # filter the  dataframe so only people who have completed more than 50% of their profile are included
+    #filter the  dataframe so only people who have completed more than 50% of their profile are included
     df = df[df["completion_percentage"] > 50]
-    # save to 10 equally sized csv files
     length = len(df)
-    df1 = df.iloc[:int(length/10)]
-    df2 = df.iloc[int(length/10):int(length/5)]
-    df3 = df.iloc[int(length/5):int(3*length/10)]
-    df4 = df.iloc[int(3*length/10):int(2*length/5)]
-    df5 = df.iloc[int(2*length/5):int(5*length/10)]
-    df6 = df.iloc[int(5*length/10):int(3*length/5)]
-    df7 = df.iloc[int(3*length/5):int(7*length/10)]
-    df8 = df.iloc[int(7*length/10):int(4*length/5)]
-    df9 = df.iloc[int(4*length/5):int(9*length/10)]
-    df10 = df.iloc[int(9*length/10):]
-    df1.to_csv("filtered_data/pokec1_filtered.csv", index=False)
-    df2.to_csv("filtered_data/pokec2_filtered.csv", index=False)
-    df3.to_csv("filtered_data/pokec3_filtered.csv", index=False)
-    df4.to_csv("filtered_data/pokec4_filtered.csv", index=False)
-    df5.to_csv("filtered_data/pokec5_filtered.csv", index=False)
-    df6.to_csv("filtered_data/pokec6_filtered.csv", index=False)
-    df7.to_csv("filtered_data/pokec7_filtered.csv", index=False)
-    df8.to_csv("filtered_data/pokec8_filtered.csv", index=False)
-    df9.to_csv("filtered_data/pokec9_filtered.csv", index=False)
-    df10.to_csv("pokec10_filtered.csv", index=False)
+    num_partitions = 10
+    partition_len = length / num_partitions 
+    for i in range(num_partitions):
+        df_temp = df.iloc[int(i*partition_len):int((i+1)*partition_len)]
+        df_temp.to_csv(f"filtered_data/pokec{i+1}.csv", index=False)
 
+def data_analysis():
+    # load data 
+    # data = pd.read_csv('filtered_data/pokec1.csv', )
+    pass
 
 if __name__ == "__main__":
-    main()
+    main()    
+    data_analysis()
