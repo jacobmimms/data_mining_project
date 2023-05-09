@@ -133,6 +133,7 @@ def get_recommendations(id, user_rating_matrix, cosine_sim, mean_normalization=F
     similar_users = similar_users[similar_users > 0].index
     
     book_data = {}
+    
     for user in similar_users:
         # if user not in user_rating_matrix.index:
         #     print(f"{user} is not in the rating matrix")
@@ -151,9 +152,9 @@ def get_recommendations(id, user_rating_matrix, cosine_sim, mean_normalization=F
     
     book_scores = {}
     for k, v in book_data.items():
-
         total_sim = np.sum([sim for sim, rating in v])
         weighted_rating = np.sum([sim * rating for sim, rating in v]) / total_sim
+
         average_rating = np.mean([rating for sim, rating in v])
         book_scores[k] = {'average_rating': average_rating, 'weighted_rating': weighted_rating}
     
@@ -205,12 +206,10 @@ def test(book_ratings):
 
     # create the user-item matrix for the training data
     train_data_matrix = create_matrix(train_data)
-    print(train_data_matrix.shape)
-    train_sim = cosine_similarity_(train_data_matrix)
     test_data_matrix = create_matrix(test_data)
-    test_sim = cosine_similarity_(test_data_matrix)
 
-    print(test_data_matrix.shape)
+    train_sim = cosine_similarity_(train_data_matrix)
+    test_sim = cosine_similarity_(test_data_matrix)
 
     # we will try to predict the user ratings for the test data using the training data
     # create a dictionary where the keys are the user ids and the values are the book ids
@@ -224,7 +223,7 @@ def test(book_ratings):
     for user_id, book_ids in user_item_dict.items():
         if user_id > 10000:
             break
-        book_rating_predictions = predict_ratings(user_id, book_ids, test_data_matrix, test_sim)
+        book_rating_predictions = predict_ratings(user_id, book_ids, test_data_matrix, train_sim)
         if book_rating_predictions is None:
             continue
         for book_id, rating in book_rating_predictions:
