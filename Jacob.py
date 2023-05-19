@@ -10,6 +10,30 @@ from sklearn.metrics.pairwise import cosine_similarity
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 
+def get_clean_rating_data():
+    print("Reading Books Data...")
+    books_data = pd.read_csv("Data/BX-Books.csv", sep=';', on_bad_lines='skip', encoding="latin")
+    print("Readting Users Data...")
+    users_data = pd.read_csv("Data/BX-Users.csv", sep=';', on_bad_lines='skip', encoding="latin")
+    print("Reading Ratings Data...")
+    book_ratings = pd.read_csv("Data/BX-Book-Ratings.csv", sep=';', on_bad_lines='skip', encoding="latin")
+    print("Done!")
+    # In Book-Author, there are some values that are not strings. Drop their rows from the dataset
+    books_data = pd.read_csv("Data/BX-Books.csv", sep=';', on_bad_lines='skip', encoding="latin")
+    books_data = books_data.loc[books_data['Book-Author'].apply(lambda x: isinstance(x, str)), :]
+    books_data = books_data.loc[books_data['Year-Of-Publication'].apply(lambda x: isinstance(x, int)), :]
+    books_data = books_data.loc[books_data['Year-Of-Publication'].apply(lambda x: x != 0), :]
+    books_data = books_data.loc[books_data['Publisher'].apply(lambda x: isinstance(x, str)), :]
+    books_data = books_data.loc[books_data['Image-URL-S'].apply(lambda x: isinstance(x, str)), :]
+    books_data = books_data.loc[books_data['Image-URL-M'].apply(lambda x: isinstance(x, str)), :]
+    books_data = books_data.loc[books_data['Image-URL-L'].apply(lambda x: isinstance(x, str)), :]
+    books_data.dropna(inplace=True)
+    books_data.reset_index(drop=True, inplace=True)
+    # return book ratings wehre the ISBN is in the books_data
+    return book_ratings.loc[book_ratings['ISBN'].isin(books_data['ISBN']), :]
+    
+
+
 def clean_data():
     print("Reading Books Data...")
     books_data = pd.read_csv("Data/BX-Books.csv", sep=';', on_bad_lines='skip', encoding="latin")
@@ -19,6 +43,7 @@ def clean_data():
     book_ratings = pd.read_csv("Data/BX-Book-Ratings.csv", sep=';', on_bad_lines='skip', encoding="latin")
     print("Done!")
     # In Book-Author, there are some values that are not strings. Drop their rows from the dataset
+    books_data = pd.read_csv("Data/BX-Books.csv", sep=';', on_bad_lines='skip', encoding="latin")
     books_data = books_data.loc[books_data['Book-Author'].apply(lambda x: isinstance(x, str)), :]
     books_data = books_data.loc[books_data['Year-Of-Publication'].apply(lambda x: isinstance(x, int)), :]
     books_data = books_data.loc[books_data['Year-Of-Publication'].apply(lambda x: x != 0), :]
@@ -29,52 +54,83 @@ def clean_data():
     books_data.dropna(inplace=True)
     books_data.reset_index(drop=True, inplace=True)
 
-    # Grab all the ISBNs that been rated over 20 times in books_data
+    ############## old code ##############
+    #     # filter out zero ratings from book_ratings
+    # book_ratings = book_ratings.loc[book_ratings['Book-Rating'] != 0, :]
+    # print("Total number of ratings in the dataset is after removing zeros: ", len(book_ratings))
+
+    # books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN'].value_counts()[book_ratings['ISBN'].value_counts() >= 5].index), :]
+    # print("Books that have been rated at least 5 times: ", len(books_data))
+
+    # # books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN'].value_counts()[book_ratings['ISBN'].value_counts() >= 10].index), :]
+    # # print("Books that have been rated at least 10 times: ", len(books_data))
+
+    # # books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN'].value_counts()[book_ratings['ISBN'].value_counts() >= 20].index), :]
+    # # print("Books that have been rated at least 20 times: ", len(books_data))
+
+    # # filter out ratings that are not in the books_data
+    # book_ratings = book_ratings.loc[book_ratings['ISBN'].isin(books_data['ISBN']), :]
+    # print("Total number of ratings in the dataset is: ", len(book_ratings))
+
+    # # filter out users who have not rated more than 4 books from book_ratings
+    # book_ratings = book_ratings.loc[book_ratings['User-ID'].isin(book_ratings['User-ID'].value_counts()[book_ratings['User-ID'].value_counts() > 4].index), :]
+    # print("Number of ratings for books rated by users who have rated >=5 books: ", len(book_ratings))
+
+    # # keep users that are in book_ratings
+    # users_data = users_data.loc[users_data['User-ID'].isin(book_ratings['User-ID']), :]
+    # print("Total number of users in the dataset is: ", len(users_data))
+
+
+    # return users_data, books_data, book_ratings
+    ############## end old code ##############
+
+
 
     # filter out zero ratings from book_ratings
     book_ratings = book_ratings.loc[book_ratings['Book-Rating'] != 0, :]
-    print("Total number of ratings in the dataset is after removing zeros: ", len(book_ratings))
-
-    books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN'].value_counts()[book_ratings['ISBN'].value_counts() >= 5].index), :]
-    print("Books that have been rated at least 5 times: ", len(books_data))
-
-    # books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN'].value_counts()[book_ratings['ISBN'].value_counts() >= 10].index), :]
-    # print("Books that have been rated at least 10 times: ", len(books_data))
-
-    # books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN'].value_counts()[book_ratings['ISBN'].value_counts() >= 20].index), :]
-    # print("Books that have been rated at least 20 times: ", len(books_data))
-
-    # filter out ratings that are not in the books_data
-    book_ratings = book_ratings.loc[book_ratings['ISBN'].isin(books_data['ISBN']), :]
-    print("Total number of ratings in the dataset is: ", len(book_ratings))
 
     # filter out users who have not rated more than 4 books from book_ratings
-    book_ratings = book_ratings.loc[book_ratings['User-ID'].isin(book_ratings['User-ID'].value_counts()[book_ratings['User-ID'].value_counts() > 4].index), :]
-    print("Number of ratings for books rated by users who have rated >=5 books: ", len(book_ratings))
+    users_data = users_data.loc[users_data['User-ID'].isin(book_ratings['User-ID'].value_counts()[book_ratings['User-ID'].value_counts() > 4].index), :]
 
-    # keep users that are in book_ratings
+    # remove book ratings by users who are not in users_data
+    book_ratings = book_ratings.loc[book_ratings['User-ID'].isin(users_data['User-ID']), :]
+
+    # filter out books that have not been rated at least 5 times
+    book_ratings = book_ratings.loc[book_ratings['ISBN'].isin(book_ratings['ISBN'].value_counts()[book_ratings['ISBN'].value_counts() >= 5].index), :]
+
+    # filter books_data to only include books in book_ratings
+    books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN']), :]
+    book_ratings = book_ratings.loc[book_ratings['ISBN'].isin(books_data['ISBN']), :]
+
+    # remove users not in book_ratings
     users_data = users_data.loc[users_data['User-ID'].isin(book_ratings['User-ID']), :]
-    print("Total number of users in the dataset is: ", len(users_data))
 
-
+    # remove book data that are not in book_ratings
+    books_data = books_data.loc[books_data['ISBN'].isin(book_ratings['ISBN']), :]
     return users_data, books_data, book_ratings
 
-def plot_frequency(book_ratings):
+def plot_frequency(book_ratings, title= 'Number of Ratings per Book'):
     book_ratings_counts = book_ratings['ISBN'].value_counts()
     book_ratings_counts.sort_values(ascending=False, inplace=True)
 
     x_values = np.arange(len(book_ratings_counts)) + 1
     y_values = book_ratings_counts.values
+
+    print(book_ratings_counts.tail(10))
+    print(min(y_values))
     # calculate the slope and y-intercept of the regression line
     slope, intercept, r_value, p_value, std_err = linregress(np.log(x_values), np.log(y_values))
     # plot the data points and regression line
     plt.plot(x_values, y_values, 'o')
     plt.plot(x_values, np.exp(intercept + slope*np.log(x_values)))
-    plt.title('Number of Ratings per Book (Log-Log Scale)')
+    plt.title(title)
     plt.xlabel('Books')
     plt.ylabel('Number of Ratings')
     plt.xscale('log')
     plt.yscale('log')
+    
+    # make figure taller
+    plt.gcf().set_size_inches(6, 6)
 
     # add the R^2 value to the plot
     plt.text(0.1, 0.9, 'R^2 = ' + str(round(r_value**2, 3)), transform=plt.gca().transAxes)
@@ -86,7 +142,6 @@ def create_matrix(book_ratings):
     print("Creating a user-rating dataframe where the rows are the users and the columns are the ISBNs...")
     matrix = pd.pivot_table(book_ratings, values='Book-Rating', index='User-ID', columns='ISBN', fill_value=0)
     return matrix
-
 
 def cosine_similarity_(matrix):
     cosine_sim = cosine_similarity(matrix, matrix)
@@ -164,7 +219,6 @@ def get_recommendations(id, user_rating_matrix, cosine_sim, mean_normalization=F
     return book_recommendations[['average_rating', 'weighted_rating']]
 
 
-
 def predict_ratings(user_id, book_ids, matrix, cosine_sim):
     recommendations = get_recommendations(user_id, matrix, cosine_sim, mean_normalization=True)
     # if recommendations is None:
@@ -221,8 +275,8 @@ def test(book_ratings):
     # get the predictions for the test data
     predictions = {}
     for user_id, book_ids in user_item_dict.items():
-        if user_id > 10000:
-            break
+        # if user_id > 10000:
+        #     break
         book_rating_predictions = predict_ratings(user_id, book_ids, test_data_matrix, train_sim)
         if book_rating_predictions is None:
             continue
@@ -261,6 +315,27 @@ def test(book_ratings):
     print("Mean absolute error: ", total_error / rows_processed)
     print("Fake error: ", fake_error/ rows_processed)
 
+def check_book_frequency():
+    ratings = get_clean_rating_data()
+    ratings = ratings.loc[ratings['User-ID'].isin(ratings['User-ID'].value_counts()[ratings['User-ID'].value_counts() > 4].index), :]
+    print(len(ratings))
+    print(f"Number of unique books: {len(ratings['ISBN'].unique())}")
+    print(f"Number of unique users: {len(ratings['User-ID'].unique())}")
+    plot_frequency(ratings, f'Number of Ratings per Book \n All Ratings \n Total Ratings: {len(ratings)}')
+    ratings = ratings[ratings['Book-Rating'] != 0]
+    print(len(ratings))
+    print(f"Number of unique books: {len(ratings['ISBN'].unique())}")
+    print(f"Number of unique users: {len(ratings['User-ID'].unique())}")
+
+    plot_frequency(ratings, f'Number of Ratings per Book \n (Ratings > 0) \n Total Ratings: {len(ratings)}')
+    # get books that are rated at least 5 times
+    
+    ratings = ratings.groupby('ISBN').filter(lambda x: len(x) >= 5)
+    print(len(ratings))
+    print(f"Number of unique books: {len(ratings['ISBN'].unique())}")
+    print(f"Number of unique users: {len(ratings['User-ID'].unique())}")
+    plot_frequency(ratings, f'Number of Ratings per Book \n (#ratings > 5) \n Total Ratings: {len(ratings)}')
+
 
 if __name__ == "__main__":
     new_data = True
@@ -281,9 +356,10 @@ if __name__ == "__main__":
         cosine_sim = pd.read_pickle("data/cosine_sim_matrix.pkl.gz")
         print("Loading data fininshed")
 
+
     test(book_ratings)
-    # user_id = 23933
-    # recs = get_recommendations(user_id, user_rating_matrix, cosine_sim, mean_normalization=True)
-    # print(recs.tail(10))
-    # print(recs.shape)
+    user_id = 23933
+    recs = get_recommendations(user_id, user_rating_matrix, cosine_sim, mean_normalization=True)
+    print(recs.tail(10))
+    print(recs.shape)
 
