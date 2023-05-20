@@ -1,4 +1,5 @@
 import json
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
@@ -143,13 +144,72 @@ def create_matrix(book_ratings):
     matrix = pd.pivot_table(book_ratings, values='Book-Rating', index='User-ID', columns='ISBN', fill_value=0)
     return matrix
 
-def cosine_similarity_(matrix):
+def basic_cosine_similarity(matrix):
     cosine_sim = cosine_similarity(matrix, matrix)
-    # Turn the cosine_sim into a dataframe
+    # Turn the cosine_sim into a dataframes
     cosine_sim = pd.DataFrame(cosine_sim, index=matrix.index, columns=matrix.index)
     # Fill the diagonal with 0s instead of 1s
     np.fill_diagonal(cosine_sim.values, 0)
     return cosine_sim
+
+def adjusted_cosine_similarity(rating_matrix):
+    results = np.zeros((rating_matrix.shape[0], rating_matrix.shape[0]))
+    # create binary matrix where 1 indicates that the user has rated the book
+    overlap = cosine_similarity(rating_matrix)
+    np.fill_diagonal(overlap, 0)
+    overlap[overlap > 0] = 1
+
+    # iterate over the indices of overlap where the value is 1
+    count = 0
+    start_time = time.time()
+    for i, j in zip(*np.where(overlap == 1)):
+        user_i = rating_matrix.iloc[i].to_numpy()
+        user_j = rating_matrix.iloc[j].to_numpy()
+        # get the indices where both users have rated the same book
+        common_indices = np.intersect1d(user_i.nonzero(), user_j.nonzero())
+        # if there are no common indices, then the similarity is 0
+        if len(common_indices) == 0:
+            results[i][j] = 0
+            continue
+        if len(common_indices) == 1:
+            common_index = common_indices[0]
+            results[i][j] = user_i[common_index] * user_j[common_index] 
+
+        # get the ratings for the common indices
+        user_i_ratings = user_i[common_indices]
+        user_j_ratings = user_j[common_indices]
+        # calculate the adjusted cosine similarity
+        results[i][j] = cosine_similarity(user_i_ratings.reshape(1, -1), user_j_ratings.reshape(1, -1))[0][0]
+        count += 1
+        if count % 10000 == 0:
+            print(f'count {count} took: {time.time() - start_time}')
+            start_time = time.time()
+        
+    return results
+
+
+
+    print(results.shape)
+    # for i in range(rating_matrix.shape[0]):
+    #     user_i_ratings = rating_matrix.iloc[i].to_numpy()
+    #     print(user_i_ratings)
+    #     for j in range(rating_matrix.shape[0]):
+    #         # skip wher user_id is the same
+    #         if i == j:
+    #             results[i][j] = 0
+    #             continue
+    #         user_j_ratings = rating_matrix.iloc[j].to_numpy()
+    #         # get the indices where both users have rated the same book
+    #         common_indices = np.intersect1d(user_i_ratings.nonzero(), user_j_ratings.nonzero())
+    #         # if there are no common indices, then the similarity is 0
+    #         if len(common_indices) == 0:
+    #             results[i][j] = 0
+    #             continue
+    #         mean_normalized_i = user_i_ratings[common_indices] - np.mean(user_i_ratings[common_indices])
+    #         mean_normalized_j = user_j_ratings[common_indices] - np.mean(user_j_ratings[common_indices])
+    #         similariity = np.dot(mean_normalized_i, mean_normalized_j) / (np.linalg.norm(mean_normalized_i) * np.linalg.norm(mean_normalized_j))
+    #         results[i, j] = similariity
+    return results
     
 def save_clean_data(user_data, book_data, book_ratings):
     # save the cleaned data to csv files
@@ -234,6 +294,12 @@ def predict_ratings(user_id, book_ids, matrix, cosine_sim):
         else:
             book_ratings.append((book_id, recommendations.loc[book_id, 'weighted_rating']))
     return book_ratings
+
+def predict_all_ratings(user_ids, book_ids, matrix, cosine_sim):
+    """
+    This function creates a matrix (user_ids x book_ids) of predicted ratings 
+    """
+    results = np.zeros((len(user_ids), len(book_ids)))
 
 
 def test(book_ratings):
@@ -338,22 +404,42 @@ def check_book_frequency():
 
 
 if __name__ == "__main__":
-    new_data = True
-    if new_data:
+    new_data = False
+    adjusted_cosine = True
+    test_cosine = True
+
+    if test_cosine:
+        user_data, book_data, book_ratings = load_clean_data()
+        user_rating_matrix = pd.read_pickle("data/user_rating_matrix.pkl.gz")
+        print(user_rating_matrix.shape)
+        cosine_sim = adjusted_cosine_similarity(user_rating_matrix)
+        # save numpy array
+        np.save("data/adjusted_cosine_sim_matrix.npy", cosine_sim)
+
+    elif new_data:
         user_data, book_data, book_ratings = clean_data()
         save_clean_data(user_data, book_data, book_ratings)
 
         user_rating_matrix = create_matrix(book_ratings)
         user_rating_matrix.to_pickle("data/user_rating_matrix.pkl.gz")
         print("user_rating_matrix created")
+        if adjusted_cosine:
+            cosine_sim = adjusted_cosine_similarity(user_rating_matrix) 
+            cosine_sim.to_pickle("data/adjusted_cosine_sim_matrix.pkl.gz")
 
-        cosine_sim = cosine_similarity_(user_rating_matrix)
-        cosine_sim.to_pickle("data/cosine_sim_matrix.pkl.gz")
+        else:
+            cosine_sim = basic_cosine_similarity(user_rating_matrix)
+            cosine_sim.to_pickle("data/basic_cosine_sim_matrix.pkl.gz")
         print("cosine_sim_matrix created")
+
     else:
         user_data, book_data, book_ratings = load_clean_data()
         user_rating_matrix = pd.read_pickle("data/user_rating_matrix.pkl.gz")
-        cosine_sim = pd.read_pickle("data/cosine_sim_matrix.pkl.gz")
+
+        if adjusted_cosine:
+            cosine_sim = pd.read_pickle("data/cosine_sim_matrix.pkl.gz")
+        else:
+            cosine_sim = pd.read_pickle("data/basic_cosine_sim_matrix.pkl.gz")
         print("Loading data fininshed")
 
 
