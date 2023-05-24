@@ -171,10 +171,6 @@ def adjusted_cosine_similarity(rating_matrix):
         if len(common_indices) == 0:
             results[i][j] = 0
             continue
-        if len(common_indices) == 1:
-            common_index = common_indices[0]
-            results[i][j] = user_i[common_index] * user_j[common_index] 
-
         # get the ratings for the common indices
         user_i_ratings = user_i[common_indices]
         user_j_ratings = user_j[common_indices]
@@ -185,30 +181,6 @@ def adjusted_cosine_similarity(rating_matrix):
             print(f'count {count} took: {time.time() - start_time}')
             start_time = time.time()
         
-    return results
-
-
-
-    print(results.shape)
-    # for i in range(rating_matrix.shape[0]):
-    #     user_i_ratings = rating_matrix.iloc[i].to_numpy()
-    #     print(user_i_ratings)
-    #     for j in range(rating_matrix.shape[0]):
-    #         # skip wher user_id is the same
-    #         if i == j:
-    #             results[i][j] = 0
-    #             continue
-    #         user_j_ratings = rating_matrix.iloc[j].to_numpy()
-    #         # get the indices where both users have rated the same book
-    #         common_indices = np.intersect1d(user_i_ratings.nonzero(), user_j_ratings.nonzero())
-    #         # if there are no common indices, then the similarity is 0
-    #         if len(common_indices) == 0:
-    #             results[i][j] = 0
-    #             continue
-    #         mean_normalized_i = user_i_ratings[common_indices] - np.mean(user_i_ratings[common_indices])
-    #         mean_normalized_j = user_j_ratings[common_indices] - np.mean(user_j_ratings[common_indices])
-    #         similariity = np.dot(mean_normalized_i, mean_normalized_j) / (np.linalg.norm(mean_normalized_i) * np.linalg.norm(mean_normalized_j))
-    #         results[i, j] = similariity
     return results
     
 def save_clean_data(user_data, book_data, book_ratings):
@@ -223,20 +195,6 @@ def load_clean_data():
     book_data = pd.read_pickle("data/book_data.pkl.gz")
     book_ratings = pd.read_pickle("data/book_ratings.pkl.gz")
     return user_data, book_data, book_ratings
-
-
-def get_mean_abs_error(predictions, test_data_matrix):
-    errors = []
-    for user_id, book_ratings in predictions.items():
-        if user_id not in test_data_matrix.index:
-            continue
-        for book in book_ratings:
-            if book not in test_data_matrix.columns:
-                continue
-            actual_rating = test_data_matrix.loc[user_id, book]
-            absolute_error = np.abs(book_ratings.loc[book] - actual_rating)
-            errors.append(absolute_error)
-    return np.mean(errors)
 
 
 def get_recommendations(id, user_rating_matrix, cosine_sim, mean_normalization=False):
@@ -255,7 +213,7 @@ def get_recommendations(id, user_rating_matrix, cosine_sim, mean_normalization=F
         #     continue
         similarity = cosine_sim.loc[id, user]
         ratings = user_rating_matrix.loc[user, :]
-        if mean_normalization == True:
+        if mean_normalization:
             mean_rating = ratings.mean() 
             ratings = (ratings - mean_rating).replace(0, np.nan) 
             ratings = ratings.dropna() # remove the NaNs
@@ -289,23 +247,28 @@ def predict_ratings(user_id, book_ids, matrix, cosine_sim):
     book_ratings = []
     for book_id in book_ids:
         if book_id not in recommendations.index:
-            # print(f"{book_id} is not in the recommendations dataframe")x
+            print(f"{book_id} is not in the recommendations dataframe")
             pass
         else:
             book_ratings.append((book_id, recommendations.loc[book_id, 'weighted_rating']))
     return book_ratings
 
-def predict_all_ratings(user_ids, book_ids, matrix, cosine_sim):
+def predict_all_ratings(user_ratings, cosine_sim):
     """
     This function creates a matrix (user_ids x book_ids) of predicted ratings 
-    """
-    results = np.zeros((len(user_ids), len(book_ids)))
-
+    """ 
+    weighted_ratings = np.matmul(cosine_sim, user_ratings)
+    cosine_sim_sum = cosine_sim.sum(axis=1)
+    print(cosine_sim_sum)
+    # divide every row by the sum of the cosine similarities
+    weighted_ratings = weighted_ratings / cosine_sim_sum[:, None]
+    print(weighted_ratings)
+    # weighted_ratings = pd.DataFrame(weighted_ratings, index=user_ratings.index, columns=user_ratings.columns)
+    return weighted_ratings
 
 def test(book_ratings):
     # group the data by user ID
     grouped_data = book_ratings.groupby('User-ID')
-    print(grouped_data.head())
     # create two dataframes for each user
     train_data = pd.DataFrame(columns=book_ratings.columns)
     test_data = pd.DataFrame(columns=book_ratings.columns)
@@ -402,21 +365,11 @@ def check_book_frequency():
     print(f"Number of unique users: {len(ratings['User-ID'].unique())}")
     plot_frequency(ratings, f'Number of Ratings per Book \n (#ratings > 5) \n Total Ratings: {len(ratings)}')
 
-
 if __name__ == "__main__":
     new_data = False
-    adjusted_cosine = True
-    test_cosine = True
-
-    if test_cosine:
-        user_data, book_data, book_ratings = load_clean_data()
-        user_rating_matrix = pd.read_pickle("data/user_rating_matrix.pkl.gz")
-        print(user_rating_matrix.shape)
-        cosine_sim = adjusted_cosine_similarity(user_rating_matrix)
-        # save numpy array
-        np.save("data/adjusted_cosine_sim_matrix.npy", cosine_sim)
-
-    elif new_data:
+    adjusted_cosine = False
+   
+    if new_data:
         user_data, book_data, book_ratings = clean_data()
         save_clean_data(user_data, book_data, book_ratings)
 
@@ -435,17 +388,33 @@ if __name__ == "__main__":
     else:
         user_data, book_data, book_ratings = load_clean_data()
         user_rating_matrix = pd.read_pickle("data/user_rating_matrix.pkl.gz")
-
         if adjusted_cosine:
-            cosine_sim = pd.read_pickle("data/cosine_sim_matrix.pkl.gz")
+            cosine_sim = np.load("data/adjusted_cosine_sim_matrix.npy")
         else:
             cosine_sim = pd.read_pickle("data/basic_cosine_sim_matrix.pkl.gz")
         print("Loading data fininshed")
 
+    predicted_ratings = predict_all_ratings(user_rating_matrix, cosine_sim.to_numpy())
+    np.save("data/basic_predicted_ratings.npy", predicted_ratings)
 
-    test(book_ratings)
-    user_id = 23933
-    recs = get_recommendations(user_id, user_rating_matrix, cosine_sim, mean_normalization=True)
-    print(recs.tail(10))
-    print(recs.shape)
+    predicted_ratings = np.load("data/basic_predicted_ratings.npy")
+    print(predicted_ratings[0:10])
+    print("predicted_ratings shape: ", predicted_ratings.shape)
+    # set all ratings that are not in the original matrix to 0
+    predicted_ratings[user_rating_matrix == 0] = 0
+    print(predicted_ratings[0:10])
+
+    print("predicted_actual_ratings shape: ", predicted_ratings.shape)
+
+
+    user_rating_matrix[predicted_ratings == 0] = 0
+    print(user_rating_matrix[0:10])
+    print("user_rating_matrix shape: ", user_rating_matrix.shape)
+
+    print("Number of ratings that are not 0: ", np.count_nonzero(predicted_ratings))
+    print("Number of actual ratings that are not 0: ", np.count_nonzero(user_rating_matrix))
+
+    # mean absolute error
+    print("Mean absolute error: ", np.sum(np.abs(predicted_ratings - user_rating_matrix)) / np.count_nonzero(user_rating_matrix))
+
 
